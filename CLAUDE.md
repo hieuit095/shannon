@@ -2,6 +2,12 @@
 
 AI-powered penetration testing agent for defensive security analysis. Automates vulnerability assessment by combining reconnaissance tools with AI-powered code analysis.
 
+## General Rules
+
+- Do not use mocks, pseudo-code, or placeholders; all features must function exactly as described.
+- Work cannot be deemed complete without verifiable evidence, and no predictions, estimates, or conclusions may be made without supporting proof.
+- Work is only confirmed as complete when backed by accurate evidence.
+
 ## Commands
 
 **Prerequisites:** Docker, AI provider credentials (`.env` for local, `npx @keygraph/shannon setup` or env vars for npx)

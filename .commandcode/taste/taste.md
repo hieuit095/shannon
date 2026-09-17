@@ -1,0 +1,2 @@
+- Requires fully functional implementations; prohibits mocks, pseudo-code, or placeholders. Confidence: 0.9
+- Requires verifiable evidence to confirm completion; no predictions, estimates, or conclusions without supporting proof. Confidence: 0.9
