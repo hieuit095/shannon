@@ -11,7 +11,6 @@ import { ErrorCode } from '../types/errors.js';
 import type { ReconciliationClass } from '../types/reconciliation.js';
 import { err, ok, type Result } from '../types/result.js';
 import { renderSafeMessage } from '../types/run-state.js';
-import { asyncPipe } from '../utils/functional.js';
 import { PentestError } from './error-handling.js';
 
 export type { ExploitationDecision, VulnType } from '../types/agents.js';
@@ -334,18 +333,16 @@ const determineExploitationDecision = (
   });
 };
 
-// Main functional validation pipeline
+// Main validation pipeline
 export async function validateQueueAndDeliverable<T extends ReconciliationClass>(
   vulnType: T,
   sourceDir: string,
 ): Promise<ReconciliationExploitationDecision<T>> {
-  return asyncPipe<ReconciliationExploitationDecision<T>>(
-    createPaths(vulnType, sourceDir),
-    checkFileExistence,
-    validateExistenceRules,
-    validateQueueContent,
-    determineExploitationDecision,
-  );
+  const paths = createPaths(vulnType, sourceDir);
+  const existence = await checkFileExistence(paths);
+  const validatedFiles = await validateExistenceRules(existence);
+  const validatedData = await validateQueueContent(validatedFiles);
+  return determineExploitationDecision(validatedData);
 }
 
 /**

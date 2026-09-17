@@ -606,7 +606,6 @@ export async function pentestPipeline(input: PipelineInput): Promise<PipelineSta
     await a.logPhaseTransition(activityInput, phaseName, 'start');
     state.agentMetrics[agentName] = await runAgent(activityInput);
     markCompleted(agentName);
-    if (input.checkpointsEnabled) await a.saveCheckpoint(activityInput, agentName, phaseName, state);
     await a.logPhaseTransition(activityInput, phaseName, 'complete');
   }
 
@@ -755,8 +754,6 @@ export async function pentestPipeline(input: PipelineInput): Promise<PipelineSta
         vulnMetrics = await runVulnAgent();
         state.agentMetrics[vulnAgentName] = vulnMetrics;
         markCompleted(vulnAgentName);
-        if (input.checkpointsEnabled)
-          await a.saveCheckpoint(activityInput, vulnAgentName, 'vulnerability-analysis', state);
       }
 
       // The class joins the shared Capella outcome here: reconciliation needs the settled
@@ -775,10 +772,8 @@ export async function pentestPipeline(input: PipelineInput): Promise<PipelineSta
         exploitMetrics = await runExploitAgent();
         state.agentMetrics[exploitAgentName] = exploitMetrics;
         markCompleted(exploitAgentName);
-        if (input.checkpointsEnabled) await a.saveCheckpoint(activityInput, exploitAgentName, 'exploitation', state);
       } else if (exploit) {
         markSkipped(exploitAgentName);
-        if (input.checkpointsEnabled) await a.saveCheckpoint(activityInput, exploitAgentName, 'exploitation', state);
       }
 
       return {

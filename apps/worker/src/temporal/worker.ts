@@ -86,7 +86,6 @@ import {
   runSsrfVulnAgent,
   runXssExploitAgent,
   runXssVulnAgent,
-  saveCheckpoint,
   surfaceReportOutputs,
   syncCodePathDenyRules,
   syncPlaywrightStealthConfig,
@@ -168,7 +167,6 @@ export const PENTEST_ACTIVITY_NAMES = Object.freeze([
   'recordResumeAttempt',
   'logPhaseTransition',
   'logWorkflowComplete',
-  'saveCheckpoint',
 ] as const);
 
 export const pentestActivities = Object.freeze({
@@ -208,7 +206,6 @@ export const pentestActivities = Object.freeze({
   recordResumeAttempt,
   logPhaseTransition,
   logWorkflowComplete,
-  saveCheckpoint,
 });
 
 const registeredPentestNames = Object.keys(pentestActivities).sort();

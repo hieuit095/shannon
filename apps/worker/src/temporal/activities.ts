@@ -26,7 +26,6 @@ import type { ResumeAttempt } from '../audit/metrics-tracker.js';
 import type { WorkflowPhase } from '../audit/safe-fields.js';
 import { authStateFile, generateAuditPath, type SessionMetadata } from '../audit/utils.js';
 import type { WorkflowSummary } from '../audit/workflow-logger.js';
-import type { CheckpointContext } from '../interfaces/checkpoint-provider.js';
 import {
   ASSEMBLED_REPORT_PDF_FILENAME,
   DEFAULT_DELIVERABLES_SUBDIR,
@@ -41,13 +40,12 @@ import { compactReportFindings as compactReportFindingsService } from '../servic
 import { getContainer, getOrCreateContainer, removeContainer } from '../services/container.js';
 import { classifyErrorForTemporal, PentestError } from '../services/error-handling.js';
 import { RenumberError } from '../services/exact-output-commit.js';
-import { ExploitationCheckerService } from '../services/exploitation-checker.js';
 import { renderFindingsFromQueues } from '../services/findings-renderer.js';
 import { executeGitCommandWithRetry } from '../services/git-manager.js';
 import { pdfProvenanceIsCurrent } from '../services/pdf-renderer.js';
 import { runPreflightChecks } from '../services/preflight.js';
 import { formatVulnClassScope } from '../services/prompt-manager.js';
-import type { ExploitationDecision, VulnType } from '../services/queue-validation.js';
+import { type ExploitationDecision, type VulnType, validateQueueSafe } from '../services/queue-validation.js';
 import {
   renumberClassFindings as renumberClassFindingsService,
   sparseExploitCollectorPath,
@@ -76,7 +74,7 @@ import type { AgentName } from '../types/agents.js';
 import type { ContainerConfig, VulnClass } from '../types/config.js';
 import { ErrorCode } from '../types/errors.js';
 import type { ReconciliationClass } from '../types/reconciliation.js';
-import { isErr } from '../types/result.js';
+import { isErr, isOk } from '../types/result.js';
 import {
   appendPartialReasons,
   assertFixedAnalysisScope,
@@ -363,25 +361,8 @@ async function runAgentActivity(
   customTools?: import('@earendil-works/pi-coding-agent').ToolDefinition[],
   writeDeliverable?: (deliverablesPath: string, execution: { readonly model?: string }) => Promise<void>,
   successDisposition: 'terminal' | 'report-draft' = 'terminal',
-  allowCheckpointSkip = true,
 ): Promise<AgentMetrics> {
   const { repoPath, configPath, pipelineTestingMode = false, workflowId, webUrl } = input;
-
-  // Skip guard: the checkpoint provider decides whether to run the agent.
-  // The default NoOp provider always returns { skip: false }.
-  const skipContainer =
-    getContainer(workflowId) ??
-    getOrCreateContainer(workflowId, buildSessionMetadata(input), buildContainerConfig(input));
-  if (allowCheckpointSkip) {
-    const decision = await skipContainer.checkpointProvider.shouldSkipAgent(
-      agentName,
-      repoPath,
-      input.deliverablesSubdir ?? DEFAULT_DELIVERABLES_SUBDIR,
-    );
-    if (decision.skip && decision.metrics) {
-      return { ...decision.metrics, skipped: true };
-    }
-  }
 
   const startTime = Date.now();
   const attemptNumber = Context.current().info.attempt;
@@ -1407,14 +1388,20 @@ export async function checkExploitationQueue(input: ActivityInput, vulnType: Vul
   const { repoPath, workflowId } = input;
   const logger = createActivityLogger();
 
-  // Reuse container's service if available (from prior vuln agent runs)
-  const existingContainer = getContainer(workflowId);
-  const checker = existingContainer?.exploitationChecker ?? new ExploitationCheckerService();
-
   // Pass deliverablesPath (not repoPath) — validators expect the deliverables directory
   const delivPath = deliverablesDir(repoPath, input.deliverablesSubdir);
   try {
-    return await checker.checkQueue(vulnType, delivPath, logger);
+    const result = await validateQueueSafe(vulnType, delivPath);
+    if (isOk(result)) {
+      const decision = result.value;
+      logger.info(
+        `${vulnType}: ${decision.shouldExploit ? `${decision.vulnerabilityCount} vulnerabilities found` : 'no vulnerabilities, skipping exploitation'}`,
+      );
+      return decision;
+    }
+    const error = result.error;
+    logger.warn(`${vulnType}: ${error.message}${error.retryable ? ' (retryable)' : ' (non-retryable, failing class)'}`);
+    throw error;
   } catch (error) {
     const classified = classifyErrorForTemporal(error);
     const message = truncateErrorMessage(error instanceof Error ? error.message : String(error));
@@ -1942,45 +1929,4 @@ export async function logWorkflowComplete(input: ActivityInput, summary: Workflo
 
   // 8. Clean up container
   removeContainer(workflowId);
-}
-
-/**
- * Merge external findings into the exploitation queue for a vulnerability type.
- *
- * Delegates to the FindingsProvider registered in the DI container.
- * Default: no-op returning { mergedCount: 0 }.
- * Consumers can override this activity at the worker level with custom findings integration.
- */
-export async function mergeFindingsIntoQueue(
-  input: ActivityInput,
-  vulnType: VulnType,
-): Promise<{ mergedCount: number }> {
-  const container = getContainer(input.workflowId);
-  if (!container?.findingsProvider) return { mergedCount: 0 };
-  return container.findingsProvider.mergeFindingsIntoQueue(input.repoPath, vulnType, input);
-}
-
-/**
- * Persist pipeline state after an agent completes.
- *
- * Delegates to the CheckpointProvider registered in the DI container.
- * Default: no-op. Consumers can override this activity at the worker level with custom persistence.
- */
-export async function saveCheckpoint(
-  input: ActivityInput,
-  agentName: string,
-  phase: string,
-  state: PipelineState,
-): Promise<void> {
-  const container = getContainer(input.workflowId);
-  if (!container?.checkpointProvider) return;
-
-  const context: CheckpointContext = {
-    repoPath: input.repoPath,
-    sessionId: input.sessionId,
-    deliverablesSubdir: input.deliverablesSubdir ?? DEFAULT_DELIVERABLES_SUBDIR,
-    ...(input.outputPath !== undefined && { outputPath: input.outputPath }),
-  };
-
-  return container.checkpointProvider.onAgentComplete(agentName, phase, state, context);
 }

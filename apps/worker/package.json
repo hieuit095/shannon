@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./interfaces": "./dist/interfaces/index.js",
     "./types": "./dist/types/index.js",
     "./types/config": "./dist/types/config.js",
     "./types/agents": "./dist/types/agents.js",

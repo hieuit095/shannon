@@ -16,9 +16,7 @@ export { runPiPrompt } from '../ai/pi/pi-executor.js';
 export type { AgentExecutionInput } from './agent-execution.js';
 export { AgentExecutionService } from './agent-execution.js';
 export { ConfigLoaderService } from './config-loader.js';
-export type { ContainerDependencies } from './container.js';
-export { Container, getContainer, getOrCreateContainer, removeContainer, setContainerFactory } from './container.js';
-export { ExploitationCheckerService } from './exploitation-checker.js';
+export { Container, getContainer, getOrCreateContainer, removeContainer } from './container.js';
 export type { CommittedReadResult } from './git-manager.js';
 export {
   blobShaFromHead,
