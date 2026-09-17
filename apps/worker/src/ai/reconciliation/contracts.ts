@@ -1,5 +1,8 @@
 /** Shared contracts for the single-scan reconciliation pipeline. */
 
+/** Schema version shared by every reconciliation artifact and publication. */
+export const RECONCILIATION_SCHEMA_VERSION = 1 as const;
+
 import type { ReconciliationClass } from '../../types/reconciliation.js';
 import type {
   AuthFinding,

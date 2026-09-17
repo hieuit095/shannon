@@ -21,7 +21,6 @@
     "./ai/reconciliation/contracts": "./dist/ai/reconciliation/contracts.js",
     "./ai/reconciliation/stage-contracts": "./dist/ai/reconciliation/stage-contracts.js",
     "./ai/reconciliation/artifact-store": "./dist/ai/reconciliation/artifact-store.js",
-    "./ai/reconciliation/schema-version": "./dist/ai/reconciliation/schema-version.js",
     "./ai/reconciliation/manifest": "./dist/ai/reconciliation/manifest.js",
     "./ai/reconciliation/prepare": "./dist/ai/reconciliation/prepare.js",
     "./ai/reconciliation/enrich": "./dist/ai/reconciliation/enrich.js",

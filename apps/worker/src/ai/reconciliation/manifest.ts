@@ -8,10 +8,9 @@
 
 import { readCommittedFile } from '../../services/git-manager.js';
 import { ALL_RECONCILIATION_CLASSES, type ReconciliationClass } from '../../types/reconciliation.js';
-import type { PublicationContract } from './contracts.js';
+import { type PublicationContract, RECONCILIATION_SCHEMA_VERSION } from './contracts.js';
 import { mintTaskReferences } from './materialize-core.js';
 import { isProducerId, isTaskReference } from './refs.js';
-import { RECONCILIATION_SCHEMA_VERSION } from './schema-version.js';
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const GIT_BLOB_PATTERN = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;

@@ -27,7 +27,13 @@ import {
   ReconciliationIoError,
   readArtifact,
 } from './artifact-store.js';
-import type { ArtifactInputDigest, ArtifactRef, PublicationContract, ReconciliationObservation } from './contracts.js';
+import {
+  type ArtifactInputDigest,
+  type ArtifactRef,
+  type PublicationContract,
+  RECONCILIATION_SCHEMA_VERSION,
+  type ReconciliationObservation,
+} from './contracts.js';
 import {
   isManifest,
   isManifestCoherent,
@@ -38,7 +44,6 @@ import {
 import { mintTaskReferences } from './materialize-core.js';
 import { exploitationQueuePath, reconciliationManifestPath, sastProvenancePath } from './prepare.js';
 import { isProducerId, isTaskReference } from './refs.js';
-import { RECONCILIATION_SCHEMA_VERSION } from './schema-version.js';
 import type { FixedTasksBody, ProducerObservationsBody, SupplementalObservationsBody } from './stage-contracts.js';
 
 // Every key here is internal bookkeeping that must never reach the exploitation queue a downstream

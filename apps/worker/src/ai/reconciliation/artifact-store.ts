@@ -6,9 +6,7 @@ import { link, lstat, mkdir, open, readFile, realpath, unlink } from 'node:fs/pr
 import path from 'node:path';
 import { WORKSPACES_DIR } from '../../paths.js';
 import { ALL_RECONCILIATION_CLASSES, type ReconciliationClass } from '../../types/reconciliation.js';
-import type { ArtifactInputDigest, ArtifactKind, ArtifactRef } from './contracts.js';
-import { RECONCILIATION_SCHEMA_VERSION } from './schema-version.js';
-import type { ArtifactBodyMap } from './stage-contracts.js';
+import { type ArtifactInputDigest, type ArtifactKind, type ArtifactRef, RECONCILIATION_SCHEMA_VERSION } from './contracts.js';
 
 export { RECONCILIATION_SCHEMA_VERSION };
 
