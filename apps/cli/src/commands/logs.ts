@@ -13,7 +13,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { watch } from 'chokidar';
 import { fail } from '../errors.js';
 import { getWorkspacesDir } from '../home.js';
 import { resolveRunFile } from '../paths.js';
@@ -160,7 +159,7 @@ export function tailUntilComplete(logFile: string, opts: TailOptions = {}): Prom
     const completionDecoder = new StringDecoder('utf8');
     let done = false;
     const controller = new AbortController();
-    let watcher: ReturnType<typeof watch> | undefined;
+    let watcher: fs.FSWatcher | undefined;
 
     /** Output any new content appended since the last read. */
     function flush(): boolean {
@@ -185,25 +184,35 @@ export function tailUntilComplete(logFile: string, opts: TailOptions = {}): Prom
       process.off('SIGINT', finish);
       const result = { sawFailure: completion.hasFailureMarker() };
       if (watcher) {
-        watcher.close().finally(() => resolve(result));
-        // Safety net — resolve anyway if watcher.close() stalls.
-        setTimeout(() => resolve(result), 1000).unref();
-      } else {
-        resolve(result);
+        try {
+          watcher.close();
+        } catch {
+          // Ignore close errors
+        }
       }
+      resolve(result);
     }
 
-    // 1. Output existing content, then stream anything appended. A per-agent file can be created
-    //    after the watcher starts, so `add` is handled too and streams it from its first line.
-    //    The file's own `Scan COMPLETED/PARTIAL/FAILED/CANCELLED` marker ends the tail on its own —
-    //    a Temporal round-trip is a backstop for a worker that dies without writing one, not the
-    //    only way to stop.
-    watcher = watch(logFile, { persistent: true });
+    // 1. Output existing content, then stream anything appended.
+    const dir = path.dirname(logFile);
+    const base = path.basename(logFile);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     const onFsEvent = (): void => {
       if (flush()) finish();
     };
-    watcher.on('change', onFsEvent);
-    watcher.on('add', onFsEvent);
+
+    try {
+      watcher = fs.watch(dir, { persistent: true }, (_eventType, filename) => {
+        if (!filename || filename === base) {
+          onFsEvent();
+        }
+      });
+    } catch {
+      // Fallback: directory watching error
+    }
+
     if (flush()) {
       finish();
       return;
