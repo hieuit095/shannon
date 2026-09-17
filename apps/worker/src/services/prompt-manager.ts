@@ -4,13 +4,12 @@
 // it under the terms of the GNU Affero General Public License version 3
 // as published by the Free Software Foundation.
 
-import { fs, path } from 'zx';
+import { fs, glob, path } from 'zx';
 import { PROMPTS_DIR } from '../paths.js';
 import { PLAYWRIGHT_SESSION_MAPPING } from '../session-manager.js';
 import type { ActivityLogger } from '../types/activity-logger.js';
 import type { Authentication, DistributedConfig, DistributedReportConfig, Rule, VulnClass } from '../types/config.js';
 import { assertFixedAnalysisScope } from '../types/run-state.js';
-import { isGlobPattern } from '../utils/glob.js';
 import { handlePromptError, PentestError } from './error-handling.js';
 
 function renderRuleLine(tag: string, value: string, description?: string): string {
@@ -27,7 +26,7 @@ function renderCodePathRules(rules: Rule[]): string {
   const filtered = rules.filter((r) => r.type === 'code_path');
   if (filtered.length === 0) return 'None';
   return filtered
-    .map((r) => renderRuleLine(isGlobPattern(r.value) ? '[GLOB]' : '[FILE]', r.value, r.description))
+    .map((r) => renderRuleLine(glob.isDynamicPattern(r.value) ? '[GLOB]' : '[FILE]', r.value, r.description))
     .join('\n');
 }
 

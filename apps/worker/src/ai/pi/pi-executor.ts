@@ -32,7 +32,6 @@ import { AGENT_VALIDATORS } from '../../session-manager.js';
 import type { ActivityLogger } from '../../types/activity-logger.js';
 import { isBrowserAgent } from '../../utils/browser-agents.js';
 import { formatTimestamp } from '../../utils/formatting.js';
-import { Timer } from '../../utils/metrics.js';
 import { createAuditLogger } from '../audit-logger.js';
 import { resolveModelSelection } from '../models.js';
 import {
@@ -245,7 +244,7 @@ export async function runPiPrompt(
 ): Promise<PiPromptResult> {
   // 1. Initialize timing and prompt. A submit tool appends its directive so the
   //    instruction to call it lives with the tool, not in every prompt file.
-  const timer = new Timer(`agent-${description.toLowerCase().replace(/\s+/g, '-')}`);
+  const startTime = Date.now();
   const basePrompt = context ? `${context}\n\n${prompt}` : prompt;
   const fullPrompt = submitTool?.directive ? basePrompt + submitTool.directive : basePrompt;
 
@@ -411,7 +410,7 @@ export async function runPiPrompt(
     const usage = totalUsage(session, childUsage);
     const result = session.getLastAssistantText() ?? null;
 
-    const duration = timer.stop();
+    const duration = Date.now() - startTime;
     progress.finish(formatCompletionMessage(execContext, description, turnCount, duration));
 
     // Capture the submit tool's structured payload so callers read it off the
@@ -435,7 +434,7 @@ export async function runPiPrompt(
     };
   } catch (error) {
     // 9. Handle errors: log, write error file, return failure
-    const duration = timer.stop();
+    const duration = Date.now() - startTime;
     const err = error as Error & { code?: string; status?: number };
     const safeError = safeErrorFromUnknown(err);
     const retryable = isRetryableFailure(err);

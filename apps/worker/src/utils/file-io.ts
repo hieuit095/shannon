@@ -17,14 +17,7 @@ import fs from 'node:fs/promises';
  * Ensure directory exists (idempotent, race-safe)
  */
 export async function ensureDirectory(dirPath: string): Promise<void> {
-  try {
-    await fs.mkdir(dirPath, { recursive: true });
-  } catch (error) {
-    // Ignore EEXIST errors (race condition safe)
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-      throw error;
-    }
-  }
+  await fs.mkdir(dirPath, { recursive: true });
 }
 
 /**
